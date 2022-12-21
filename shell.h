@@ -1,88 +1,114 @@
-#ifndef __SHELL_H__
-#define __SHELL_H__
+#ifndef SHELL_H
+#define SHELL_H
 
-/*libraries*/
+/* header files */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/stat.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/wait.h>
 #include <sys/types.h>
-#include <stdbool.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <errno.h>
 
-/*string_handlers*/
-char *duplicate_str(char *str);
-char *check_str(char *str, int chr);
-int _strlen(const char *str);
-int _strcmp(char *s1, char *s2);
-int _strncmp(const char *first, const char *second, int n);
-
-/*command_handler*/
-char *_getpath(void);
-char **tokenize(char *str);
-void exec_cmd(char *c, char **cmd);
-char *append_path(char *path, char *cmd);
-char *search_path(char **p, char *cmd);
-
-/*built-ins*/
-void env_builtin(void);
-void logout(char **cmd, char *b);
-int is_builtin(char **cmd, char *b);
-void prompt_printer(void);
-void handle_sig(int n);
-
-/*helper function*/
-int cmd_type(char **cmd, char *b);
-void free_cmds(char **m);
-
-/*environment variables*/
-extern __sighandler_t signal(int __sig, __sighandler_t __handler);
+/* Global variable */
 extern char **environ;
 
+/* Macros */
+#define BUFSIZE 256
+#define TOKENSIZE 64
+#define PRINT(c) (write(STDOUT_FILENO, c, _strlen(c)))
+#define PROMPT "$ "
+#define SUCCESS (1)
+#define FAIL (-1)
+#define NEUTRAL (0)
+
+/* Struct */
+
 /**
- * struct builtins - Handles builtins
- * @env: First member
- * @exit: Second member
+ * struct sh_data - Global data structure
+ * @line: the line input
+ * @args: the arguments token
+ * @error_msg: the global path
+ * @cmd: the parsed command
+ * @index: the command index
+ * @oldpwd: the old path visited
+ * @env: the environnment
  *
- * Description: builtin commands
+ * Description: A structure contains all the variables needed to manage
+ * the program, memory and accessability
  */
-struct builtins
+typedef struct sh_data
 {
+	char *line;
+	char **args;
+	char *cmd;
+	char *error_msg;
+	char *oldpwd;
+	unsigned long int index;
 	char *env;
-	char *exit;
-
-} builtins;
-
-
+} sh_t;
 /**
- * struct info - Status info struct
- * @final_exit: First member
- * @ln_count: Second member
+ * struct builtin - Manage the builtin functions
+ * @cmd: the command line on string form
+ * @f: the associated function
  *
- * Description: Used in error handling
+ * Description: this struct made to manage builtins cmd
  */
-struct info
+typedef struct builtin
 {
-	int final_exit;
-	int ln_count;
-} info;
+	char *cmd;
+	int (*f)(sh_t *data);
+} blt_t;
+/* ----------Process prototype------------*/
+int read_line(sh_t *);
+int split_line(sh_t *);
+int parse_line(sh_t *);
+int process_cmd(sh_t *);
 
+/* ----------String prototype------------*/
+char *_strdup(char *str);
+char *_strcat(char *first, char *second);
+int _strlen(char *str);
+char *_strchr(char *str, char c);
+int _strcmp(char *s1, char *s2);
 
-/**
- * struct flags - Holds flags
- * @interactive: First member
- *
- * Description: used to handle
- *
- * boolean switches
- */
-struct flags
-{
-	bool interactive;
-} flags;
+/* ----------More String prototype-------*/
+char *_strcpy(char *dest, char *source);
 
+/* ----------Memory prototype------------*/
+void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size);
+char *_memset(char *s, char byt, unsigned int n);
+char *_memcpy(char *dest, char *src, unsigned int n);
+int free_data(sh_t *);
 
-#endif /* __SHELL_H__ */
+/* ----------Tools prototype-------------*/
+void *fill_an_array(void *a, int el, unsigned int len);
+void signal_handler(int signo);
+char *_getenv(char *path_name);
+void index_cmd(sh_t *data);
+void array_rev(char *arr, int len);
+
+/* ----------More tools prototype--------*/
+char *_itoa(unsigned int n);
+int intlen(int num);
+int _atoi(char *c);
+int print_error(sh_t *data);
+int write_history(sh_t *data);
+int _isalpha(int c);
+
+/* -------------Builtins-----------------*/
+int abort_prg(sh_t *data);
+int change_dir(sh_t *data);
+int display_help(sh_t *data);
+int handle_builtin(sh_t *data);
+int check_builtin(sh_t *data);
+
+/* -------------Parse-----------------*/
+int is_path_form(sh_t *data);
+void is_short_form(sh_t *data);
+int is_builtin(sh_t *data);
+
+#endif /* SHELL_H */
